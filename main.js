@@ -14,15 +14,18 @@ window.addEventListener('load', () => {
     class Game {
         constructor(){
             this.world = new World();
-            this.hero = new Hero({game:this,position:{x:2,y:2}});
+            this.hero = new Hero({game:this,position:{x:1 * TILE_SIZE,y:2 * TILE_SIZE}});
             this.input = new Input();
         }
         render(ctx){
+            this.hero.update()
+            this.world.drawBackground(ctx);
             this.world.drawGrid(ctx);
             this.hero.draw(ctx);
-            this.hero.update()
+            this.world.drawForeground(ctx);
         }
     }
+
     const game = new Game();
 
     function animate() {
@@ -35,7 +38,20 @@ window.addEventListener('load', () => {
 
 class World {
     constructor() {
-        this.level1 = {}
+        this.level1 = {
+            waterLayer: [],
+            groundLayer: [],
+            backgroundLayer: document.getElementById('backgroundLevel1'),
+            foregroundLayer: document.getElementById('foregroundLevel1'),
+        }
+    }
+    
+    drawBackground(ctx){
+        ctx.drawImage(this.level1.backgroundLayer, 0, 0)
+    }
+
+    drawForeground(ctx){
+        ctx.drawImage(this.level1.foregroundLayer, 0, 0)
     }
 
     drawGrid(ctx){
@@ -59,12 +75,42 @@ class GameObject {
         this.sprite = sprite ?? {x:0,y:0,width:TILE_SIZE,height:TILE_SIZE,image:''};
         this.position = position ?? {x:0,y:0};
         this.scale = scale ?? 1;
+
+        this.destinationPosition = {x: this.position.x, y: this.position.y};
+        this.distanceToTravel = {x:0,y:0}
+    }
+
+    moveTowards(destinationPosition,speed){
+        this.distanceToTravel.x = destinationPosition.x - this.position.x;
+        this.distanceToTravel.y = destinationPosition.y - this.position.y;
+
+        //let distance = Math.sqrt(this.distanceToTravel.x**2 + this.distanceToTravel.y**2);
+        let distance = Math.hypot(this.distanceToTravel.x + this.distanceToTravel.y);
+
+        if(distance <= speed) {
+            this.position.x = destinationPosition.x;
+            this.position.y = destinationPosition.y;
+        } else {
+            // learn vector properly
+            const stepX = this.distanceToTravel.x / distance;
+            const stepY = this.distanceToTravel.y / distance;
+            this.position.x += stepX * speed;
+            this.position.y += stepY * speed;
+
+            this.distanceToTravel.x = destinationPosition.x - this.position.x;
+            this.distanceToTravel.y = destinationPosition.y - this.position.y;
+
+            distance = Math.hypot(this.distanceToTravel.x + this.distanceToTravel.y);
+        }
+
+        return distance;
+        
     }
     
     draw(ctx){
         ctx.fillRect(
-            this.position.x * TILE_SIZE,
-            this.position.y * TILE_SIZE,
+            this.position.x,
+            this.position.y,
             TILE_SIZE,
             TILE_SIZE,
         )
@@ -74,18 +120,32 @@ class GameObject {
 class Hero extends GameObject {
     constructor({game, sprite,position,scale}) {
         super({game, sprite,position,scale})
+        this.speed = 2;
     }
 
     update(){
-        if (this.game.input.lastKey === UP){
-            this.position.y--;
-        }else if (this.game.input.lastKey === DOWN){
-            this.position.y++;
-        }else if (this.game.input.lastKey === LEFT){
-            this.position.x--;
-        }else if (this.game.input.lastKey === RIGHT){
-            this.position.x++;
+        let nextX = this.destinationPosition.x;
+        let nextY = this.destinationPosition.y;
+
+        const distance = this.moveTowards(this.destinationPosition,this.speed);
+
+        const arrived = distance <= this.speed;
+
+        if(arrived){
+            if (this.game.input.lastKey === UP){
+                nextY -= TILE_SIZE;
+            }else if (this.game.input.lastKey === DOWN){
+                nextY += TILE_SIZE;
+            }else if (this.game.input.lastKey === LEFT){
+                nextX -= TILE_SIZE;
+            }else if (this.game.input.lastKey === RIGHT){
+                nextX += TILE_SIZE;
+            }
+            this.destinationPosition.x = nextX;
+            this.destinationPosition.y = nextY;
         }
+
+
     }
 }
 
@@ -99,7 +159,6 @@ class Input {
         this.keys = [];
 
         window.addEventListener('keydown', e => {
-            console.log(e);
             if ( e.key === 'ArrowUp' || e.key.toLowerCase() === 'w'){
                 this.keyPressed(UP);
             }else if ( e.key === 'ArrowDown' || e.key.toLowerCase() === 's'){
@@ -111,7 +170,6 @@ class Input {
             }
         })
         window.addEventListener('keyup', e => {
-            console.log(e);
             if ( e.key === 'ArrowUp' || e.key.toLowerCase() === 'w'){
                 this.keyReleased(UP);
             }else if ( e.key === 'ArrowDown' || e.key.toLowerCase() === 's'){
@@ -138,3 +196,4 @@ class Input {
         return this.keys[0];
     }
 }
+
