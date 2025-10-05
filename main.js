@@ -3,6 +3,7 @@ const COLS = 15;
 const ROWS = 20;
 const GAME_WIDTH = TILE_SIZE * COLS;
 const GAME_HEIGHT = TILE_SIZE * ROWS;
+const HALF_TILE = TILE_SIZE / 2;
 
 window.addEventListener('load', () => {
     const canvas = document.getElementById('canvas1')
@@ -14,24 +15,40 @@ window.addEventListener('load', () => {
     class Game {
         constructor(){
             this.world = new World();
-            this.hero = new Hero({game:this,position:{x:1 * TILE_SIZE,y:2 * TILE_SIZE}});
+            this.hero = new Hero({game:this,sprite:{x:0,y:11,width:64,height:64,image:document.getElementById('hero1')},position:{x:1 * TILE_SIZE,y:2 * TILE_SIZE},});
             this.input = new Input();
+
+            this.eventUpdate = false;
+            this.eventTimer = 0;
+            this.eventInterval = 120;
         }
-        render(ctx){
+        render(ctx, deltaTime){
             this.hero.update()
             this.world.drawBackground(ctx);
             this.world.drawGrid(ctx);
             this.hero.draw(ctx);
             this.world.drawForeground(ctx);
+
+            if ( this.eventTimer < this.eventInterval) {
+                this.eventTimer += deltaTime;
+                this.eventUpdate = false;
+            }else {
+                this.eventTimer = 0;
+                this.eventUpdate = true;
+            }
         }
     }
 
     const game = new Game();
 
-    function animate() {
+    let lastTime = 0;
+    function animate(timeStamp) {
         requestAnimationFrame(animate);
-        // ctx.clearReact()
-        game.render(ctx);
+
+        const deltaTime = timeStamp - lastTime;
+        lastTime = timeStamp
+
+        game.render(ctx, deltaTime);
     }
     requestAnimationFrame(animate)
 })
@@ -55,6 +72,7 @@ class World {
     }
 
     drawGrid(ctx){
+        ctx.strokeStyle = 'black'
         for (let row = 0; row < ROWS; row++) {
             for (let col = 0; col < COLS; col++) {
                 ctx.strokeRect(
@@ -78,6 +96,10 @@ class GameObject {
 
         this.destinationPosition = {x: this.position.x, y: this.position.y};
         this.distanceToTravel = {x:0,y:0}
+
+        this.width = this.sprite.width * this.scale;
+        this.halfWidth = this.width / 2;
+        this.height = this.sprite.height * this.scale;
     }
 
     moveTowards(destinationPosition,speed){
@@ -103,17 +125,36 @@ class GameObject {
             distance = Math.hypot(this.distanceToTravel.x + this.distanceToTravel.y);
         }
 
+        
         return distance;
         
     }
     
     draw(ctx){
+        ctx.fillStyle = 'blue'
         ctx.fillRect(
             this.position.x,
             this.position.y,
             TILE_SIZE,
             TILE_SIZE,
         )
+        ctx.strokeStyle = 'yellow'
+        ctx.strokeRect(
+            this.destinationPosition.x,
+            this.destinationPosition.y,
+            TILE_SIZE,
+            TILE_SIZE,
+        )
+        ctx.drawImage(
+            this.sprite.image,
+            this.sprite.x * this.sprite.width,
+            this.sprite.y * this.sprite.height,
+            this.sprite.width,
+            this.sprite.height,
+            this.position.x + HALF_TILE - this.halfWidth,
+            this.position.y + TILE_SIZE - this.height,
+            this.width,
+            this.height)
     }
 }
 
@@ -121,6 +162,7 @@ class Hero extends GameObject {
     constructor({game, sprite,position,scale}) {
         super({game, sprite,position,scale})
         this.speed = 2;
+        this.maxFrame = 2;
     }
 
     update(){
@@ -134,19 +176,27 @@ class Hero extends GameObject {
         if(arrived){
             if (this.game.input.lastKey === UP){
                 nextY -= TILE_SIZE;
+                this.sprite.y = 8;
             }else if (this.game.input.lastKey === DOWN){
                 nextY += TILE_SIZE;
+                this.sprite.y = 10;
             }else if (this.game.input.lastKey === LEFT){
                 nextX -= TILE_SIZE;
+                this.sprite.y = 9;
             }else if (this.game.input.lastKey === RIGHT){
                 nextX += TILE_SIZE;
+                this.sprite.y = 11;
             }
             this.destinationPosition.x = nextX;
             this.destinationPosition.y = nextY;
         }
-
+        if ( this.game.eventUpdate) {
+            this.sprite.x < this.maxFrame ? this.sprite.x++  : this.sprite.x = 0;
+        }
 
     }
+
+
 }
 
 const LEFT = 'LEFT';
@@ -197,3 +247,4 @@ class Input {
     }
 }
 
+// 340 445
