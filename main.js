@@ -31,19 +31,25 @@ window.addEventListener("load", () => {
         position: { x: 1 * TILE_SIZE, y: 2 * TILE_SIZE },
         scale: 1,
       });
-      this.input = new Input();
+      this.input = new Input(this);
 
       this.eventUpdate = false;
       this.eventTimer = 0;
       this.eventInterval = 120;
+
+      this.debug = false;
+    }
+    toggleDebug(){
+        this.debug = !this.debug;
     }
     render(ctx, deltaTime) {
       this.hero.update(deltaTime);
       this.world.drawBackground(ctx);
-      this.world.drawGrid(ctx);
+
+      if(this.debug) this.world.drawGrid(ctx);
       this.hero.draw(ctx);
       this.world.drawForeground(ctx);
-      this.world.drawCollisionMap(ctx);
+      if(this.debug) this.world.drawCollisionMap(ctx);
 
       if (this.eventTimer < this.eventInterval) {
         this.eventTimer += deltaTime;
@@ -76,7 +82,7 @@ class World {
       groundLayer: [],
       collisionLayer: [
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
         1,0,0,1,1,0,0,0,0,0,0,0,0,0,1,
         1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,
@@ -182,15 +188,17 @@ class GameObject {
   }
 
   draw(ctx) {
-    ctx.fillStyle = "blue";
-    ctx.fillRect(this.position.x, this.position.y, TILE_SIZE, TILE_SIZE);
-    ctx.strokeStyle = "yellow";
-    ctx.strokeRect(
-      this.destinationPosition.x,
-      this.destinationPosition.y,
-      TILE_SIZE,
-      TILE_SIZE,
-    );
+    if(this.game.debug){
+        ctx.fillStyle = "blue";
+        ctx.fillRect(this.position.x, this.position.y, TILE_SIZE, TILE_SIZE);
+        ctx.strokeStyle = "yellow";
+        ctx.strokeRect(
+          this.destinationPosition.x,
+          this.destinationPosition.y,
+          TILE_SIZE,
+          TILE_SIZE,
+        );
+    }
     ctx.drawImage(
       this.sprite.image,
       this.sprite.x * this.sprite.width,
@@ -260,7 +268,8 @@ class Hero extends GameObject {
 
 
 class Input {
-  constructor() {
+  constructor(game) {
+    this.game = game;
     this.keys = [];
 
     window.addEventListener("keydown", (e) => {
@@ -272,6 +281,8 @@ class Input {
         this.keyPressed(LEFT);
       } else if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") {
         this.keyPressed(RIGHT);
+      } else if (e.key === "Enter" || e.key === " ") {
+        this.game.toggleDebug();
       }
     });
     window.addEventListener("keyup", (e) => {
@@ -290,7 +301,6 @@ class Input {
   keyPressed(key) {
     if (this.keys.indexOf(key) === -1) {
       this.keys.unshift(key);
-      console.log(key, this.keys);
     }
   }
   keyReleased(key) {
