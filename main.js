@@ -43,6 +43,7 @@ window.addEventListener("load", () => {
       this.world.drawGrid(ctx);
       this.hero.draw(ctx);
       this.world.drawForeground(ctx);
+      this.world.drawCollisionMap(ctx);
 
       if (this.eventTimer < this.eventInterval) {
         this.eventTimer += deltaTime;
@@ -73,17 +74,52 @@ class World {
     this.level1 = {
       waterLayer: [],
       groundLayer: [],
+      collisionLayer: [
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,1,1,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,
+        1,0,0,,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,1,1,1,1,1,1,1,1,0,0,0,1,
+        1,0,0,1,1,1,1,1,1,1,1,0,0,0,1,
+        1,0,0,1,1,1,1,1,1,1,1,0,1,1,1,
+        1,0,0,1,1,1,1,1,1,1,1,0,0,0,1,
+        1,0,0,1,1,1,1,1,1,1,1,0,0,0,1,
+        1,0,0,1,1,1,1,1,1,1,1,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,1,1,0,0,1,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+      ],
       backgroundLayer: document.getElementById("backgroundLevel1"),
       foregroundLayer: document.getElementById("foregroundLevel1"),
     };
   }
-
+  getTile(array, row, col){
+    return array[COLS * row + col]
+  }
   drawBackground(ctx) {
     ctx.drawImage(this.level1.backgroundLayer, 0, 0);
   }
 
   drawForeground(ctx) {
     ctx.drawImage(this.level1.foregroundLayer, 0, 0);
+  }
+
+  drawCollisionMap(ctx){
+    ctx.fillStyle = "rgba(0,0,225,0.5)";
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        if(this.getTile(this.level1.collisionLayer, row, col)){
+            ctx. fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+      }
+    }
   }
 
   drawGrid(ctx) {
@@ -200,8 +236,12 @@ class Hero extends GameObject {
         nextX += TILE_SIZE;
         this.sprite.y = 11;
       }
-      this.destinationPosition.x = nextX;
-      this.destinationPosition.y = nextY;
+      const col = nextX / TILE_SIZE;
+      const row = nextY / TILE_SIZE;
+      if(this.game.world.getTile(this.game.world.level1.collisionLayer, row,col) !== 1){
+          this.destinationPosition.x = nextX;
+          this.destinationPosition.y = nextY;
+      }
     }
 
     if (this.game.input.keys.length > 0 || !arrived) {
