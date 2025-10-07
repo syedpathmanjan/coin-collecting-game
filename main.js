@@ -1,3 +1,5 @@
+const coinsCollectedElement = document.getElementById("coins-collected");
+
 const TILE_SIZE = 32;
 const COLS = 15;
 const ROWS = 20;
@@ -8,6 +10,7 @@ const LEFT = "LEFT";
 const RIGHT = "RIGHT";
 const UP = "UP";
 const DOWN = "DOWN";
+let coinsCollected = 0;
 
 window.addEventListener("load", () => {
   const canvas = document.getElementById("canvas1");
@@ -45,7 +48,8 @@ window.addEventListener("load", () => {
     render(ctx, deltaTime) {
       this.hero.update(deltaTime);
       this.world.drawBackground(ctx);
-
+      this.world.drawCoins(ctx)
+      
       if(this.debug) this.world.drawGrid(ctx);
       this.hero.draw(ctx);
       this.world.drawForeground(ctx);
@@ -78,15 +82,35 @@ window.addEventListener("load", () => {
 class World {
   constructor() {
     this.level1 = {
-      waterLayer: [],
-      groundLayer: [],
+      coinsLayer: [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,
+        0,0,1,0,1,1,1,1,1,1,1,1,1,1,0,
+        0,1,1,0,0,1,1,0,1,1,1,1,1,1,0,
+        0,1,1,1,1,1,1,0,1,0,0,1,1,1,0,
+        0,1,1,0,1,1,0,1,1,1,1,1,1,1,0,
+        0,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+        0,1,1,0,0,0,0,0,0,0,0,1,0,1,0,
+        0,1,1,0,0,0,0,0,0,0,0,1,0,0,0,
+        0,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+        0,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+        0,1,1,0,0,0,0,0,0,0,0,1,1,1,0,
+        0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+        0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+        0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,
+        0,1,1,0,0,1,1,0,1,1,1,1,1,1,0,
+        0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+        0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+        0,0,0,0,1,0,0,0,0,1,0,0,1,1,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+      ],
       collisionLayer: [
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
         1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
         1,0,0,1,1,0,0,0,0,0,0,0,0,0,1,
         1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,
-        1,0,0,,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
         1,0,0,1,1,1,1,1,1,1,1,0,0,0,1,
         1,0,0,1,1,1,1,1,1,1,1,0,0,0,1,
         1,0,0,1,1,1,1,1,1,1,1,0,1,1,1,
@@ -117,16 +141,28 @@ class World {
     ctx.drawImage(this.level1.foregroundLayer, 0, 0);
   }
 
+  drawCoins(ctx) {
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        if(this.getTile(this.level1.coinsLayer, row, col)){
+          ctx. drawImage(document.getElementById("coin"),col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+      }
+    }
+  }
+  
   drawCollisionMap(ctx){
     ctx.fillStyle = "rgba(0,0,225,0.5)";
     for (let row = 0; row < ROWS; row++) {
       for (let col = 0; col < COLS; col++) {
         if(this.getTile(this.level1.collisionLayer, row, col)){
-            ctx. fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+          ctx. fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
         }
       }
     }
   }
+
+  
 
   drawGrid(ctx) {
     ctx.strokeStyle = "black";
@@ -249,6 +285,13 @@ class Hero extends GameObject {
       if(this.game.world.getTile(this.game.world.level1.collisionLayer, row,col) !== 1){
           this.destinationPosition.x = nextX;
           this.destinationPosition.y = nextY;
+      }
+      if(this.game.world.getTile(this.game.world.level1.coinsLayer, row,col) !== 0){
+        coinsCollected += 1;
+        coinsCollectedElement.textContent = "Coins Collected: " + coinsCollected;
+        this.game.world.level1.coinsLayer[row * COLS + col] = 0;
+      } else if (coinsCollected == 149) {
+        coinsCollectedElement.textContent = "You have collected all 149 coins"
       }
     }
 
